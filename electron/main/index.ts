@@ -1,8 +1,9 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import os from 'node:os'
+import fs from 'node:fs'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -116,5 +117,60 @@ ipcMain.handle('open-win', (_, arg) => {
     childWindow.loadURL(`${VITE_DEV_SERVER_URL}#${arg}`)
   } else {
     childWindow.loadFile(indexHtml, { hash: arg })
+  }
+})
+
+// ── EML file I/O ────────────────────────────────────────────────────────────
+
+/**
+ * Open an EML file via a native dialog and return its text content.
+ * Returns { filePath, content } or null when the user cancels.
+ */
+ipcMain.handle('dialog:open-eml', async () => {
+  if (!win) return null
+  const result = await dialog.showOpenDialog(win, {
+    title: '打开 EML 文件',
+    filters: [
+      { name: 'EML 邮件文件', extensions: ['eml'] },
+      { name: '所有文件', extensions: ['*'] },
+    ],
+    properties: ['openFile'],
+  })
+  if (result.canceled || result.filePaths.length === 0) return null
+  const filePath = result.filePaths[0]
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return { filePath, content }
+  } catch {
+    // Fall back to latin-1 (binary-safe) for files with non-UTF-8 raw bytes
+    const content = fs.readFileSync(filePath, 'latin1')
+    return { filePath, content }
+  }
+})
+
+/**
+ * Save EML content to disk.
+ * If filePath is provided, overwrite that file; otherwise open a Save-As dialog.
+ * Returns the saved file path, or null when the user cancels.
+ */
+ipcMain.handle('dialog:save-eml', async (_, { filePath, content }: { filePath: string | null; content: string }) => {
+  let savePath = filePath
+  if (!savePath) {
+    if (!win) return null
+    const result = await dialog.showSaveDialog(win, {
+      title: '保存 EML 文件',
+      filters: [
+        { name: 'EML 邮件文件', extensions: ['eml'] },
+        { name: '所有文件', extensions: ['*'] },
+      ],
+    })
+    if (result.canceled || !result.filePath) return null
+    savePath = result.filePath
+  }
+  try {
+    fs.writeFileSync(savePath, content, 'utf-8')
+    return savePath
+  } catch {
+    return null
   }
 })
