@@ -6,7 +6,7 @@
     {
       "label": "Before Debug",
       "type": "shell",
-      "command": "node .vscode/.debug.script.mjs",
+      "command": "node .vscode/.debug.script.mjs; npm run dev",
       "isBackground": true,
       "problemMatcher": {
         "owner": "typescript",

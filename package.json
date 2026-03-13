@@ -34,5 +34,9 @@
     "vite-plugin-electron-renderer": "^0.14.5",
     "vue": "^3.4.21",
     "vue-tsc": "^2.0.6"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.7.2",
+    "iconv-lite-umd": "^0.6.10"
   }
 }

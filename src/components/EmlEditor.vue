@@ -36,9 +36,28 @@ function applyParsed(data: EmlData) {
   htmlContent.value = data.htmlContent
 }
 
+function clearEditor() {
+  filePath.value = null
+  rawEml.value = ''
+  received.value = ''
+  date.value = ''
+  from.value = ''
+  to.value = ''
+  subject.value = ''
+  textContent.value = ''
+  htmlContent.value = ''
+  activeTab.value = 'text'
+}
+
 function clearMessages() {
   errorMsg.value = ''
   successMsg.value = ''
+}
+
+function closeFile() {
+  clearMessages()
+  clearEditor()
+  successMsg.value = '已关闭当前 EML 文件'
 }
 
 // ─── IPC actions ─────────────────────────────────────────────────────────────
@@ -136,6 +155,9 @@ async function saveAsFile() {
       <div class="toolbar-actions">
         <button class="btn btn-primary" :disabled="loading" @click="openFile">
           {{ loading ? '打开中…' : '📂 打开 EML' }}
+        </button>
+        <button class="btn btn-outline" :disabled="!hasFile" @click="closeFile">
+          关闭 EML
         </button>
         <button class="btn btn-success" :disabled="!hasFile || saving" @click="saveFile">
           {{ saving ? '保存中…' : '💾 保存' }}

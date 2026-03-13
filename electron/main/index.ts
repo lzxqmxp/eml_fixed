@@ -138,14 +138,10 @@ ipcMain.handle('dialog:open-eml', async () => {
   })
   if (result.canceled || result.filePaths.length === 0) return null
   const filePath = result.filePaths[0]
-  try {
-    const content = fs.readFileSync(filePath, 'utf-8')
-    return { filePath, content }
-  } catch {
-    // Fall back to latin-1 (binary-safe) for files with non-UTF-8 raw bytes
-    const content = fs.readFileSync(filePath, 'latin1')
-    return { filePath, content }
-  }
+  // Always load as raw bytes and map 1:1 to JS string code units.
+  // This avoids UTF-8 replacement chars corrupting non-UTF-8 EML bodies.
+  const content = fs.readFileSync(filePath).toString('latin1')
+  return { filePath, content }
 })
 
 /**
@@ -168,7 +164,8 @@ ipcMain.handle('dialog:save-eml', async (_, { filePath, content }: { filePath: s
     savePath = result.filePath
   }
   try {
-    fs.writeFileSync(savePath, content, 'utf-8')
+    // Persist as raw bytes from the 1:1 latin1 byte-string representation.
+    fs.writeFileSync(savePath, Buffer.from(content, 'latin1'))
     return savePath
   } catch {
     return null
